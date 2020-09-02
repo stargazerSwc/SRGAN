@@ -143,13 +143,13 @@ if __name__ == '__main__':
                      display_transform()(sr.data.cpu().squeeze(0))])
             val_images = torch.stack(val_images)
             val_images = torch.chunk(val_images, val_images.size(0) // 15)
-            val_save_bar = tqdm(val_images, desc='[saving training results]')
-            index = 1
-	    if epoch == NUM_EPOCHS:
-                for image in val_save_bar:
-                    image = utils.make_grid(image, nrow=3, padding=5)
-                    utils.save_image(image, out_path + 'epoch_%d_index_%d.png' % (epoch, index), padding=5)
-                    index += 1
+            if epoch == NUM_EPOCHS:
+		val_save_bar = tqdm(val_images, desc='[saving training results]')
+		index = 1
+            	for image in val_save_bar:
+			image = utils.make_grid(image, nrow=3, padding=5)
+			utils.save_image(image, out_path + 'epoch_%d_index_%d.png' % (epoch, index), padding=5)
+			index += 1
     
         # save model parameters
 	if epoch % 10 == 0 and epoch != 0:
