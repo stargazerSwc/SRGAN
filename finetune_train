@@ -20,8 +20,8 @@ parser.add_argument('--crop_size', default=88, type=int, help='training images c
 parser.add_argument('--upscale_factor', default=4, type=int, choices=[2, 4, 8],
                     help='super resolution upscale factor')
 parser.add_argument('--num_epochs', default=1, type=int, help='train epoch number')
-parser.add_argument('--train_set_foldpath', default='../input/SRGAN-test/VOC2012/VOC2012/train', help='trainsetfoldpath')
-parser.add_argument('--val_set_foldpath', default='../input/SRGAN-test/VOC2012/VOC2012/val', help='valsetfoldpath')
+parser.add_argument('--train_set_foldpath', default='../input/SRGAN-test/train', help='trainsetfoldpath')
+parser.add_argument('--val_set_foldpath', default='../input/SRGAN-test/val', help='valsetfoldpath')
 parser.add_argument('--pre_Gmodel',default='../input/SRGAN-test/netG_epoch_4_70.pth', help='pretrained Generator')
 parser.add_argument('--pre_Dmodel',default='../input/SRGAN-test/netD_epoch_4_70.pth', help='pretrained Discriminator')
 
