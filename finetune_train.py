@@ -53,9 +53,9 @@ if __name__ == '__main__':
     generator_criterion = GeneratorLoss()
     
     if torch.cuda.is_available():
-        netG.cuda()
+	netG.cuda()
 	netG.load_state_dict(torch.load(pre_Gmodel))
-        netD.cuda()
+	netD.cuda()
 	netD.load_state_dict(torch.load(pre_Dmodel))
         generator_criterion.cuda()
     
