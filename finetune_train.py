@@ -31,7 +31,7 @@ if __name__ == '__main__':
     CROP_SIZE = opt.crop_size
     UPSCALE_FACTOR = opt.upscale_factor
     NUM_EPOCHS = opt.num_epochs
-    train_set_foldpath = opt.traintrain_set_foldpath
+    train_set_foldpath = opt.train_set_foldpath
     val_set_foldpath = opt.val_set_foldpath
     pre_Gmodel = opt.pre_Gmodel
     pre_Dmodel = opt.pre_Dmodel
