@@ -22,59 +22,59 @@ parser.add_argument('--upscale_factor', default=4, type=int, choices=[2, 4, 8],
 parser.add_argument('--num_epochs', default=1, type=int, help='train epoch number')
 parser.add_argument('--train_set_foldpath', default='../input/SRGAN-test/train', help='trainsetfoldpath')
 parser.add_argument('--val_set_foldpath', default='../input/SRGAN-test/val', help='valsetfoldpath')
-parser.add_argument('--pre_Gmodel',default='../input/SRGAN-test/netG_epoch_4_70.pth', help='pretrained Generator')
-parser.add_argument('--pre_Dmodel',default='../input/SRGAN-test/netD_epoch_4_70.pth', help='pretrained Discriminator')
+parser.add_argument('--pre_Gmodel', default='../input/SRGAN-test/netG_epoch_4_70.pth', help='pretrained Generator')
+parser.add_argument('--pre_Dmodel', default='../input/SRGAN-test/netD_epoch_4_70.pth', help='pretrained Discriminator')
 
 if __name__ == '__main__':
     opt = parser.parse_args()
-    
+
     CROP_SIZE = opt.crop_size
     UPSCALE_FACTOR = opt.upscale_factor
     NUM_EPOCHS = opt.num_epochs
     train_set_foldpath = opt.traintrain_set_foldpath
-    val_set_foldpath=opt.val_set_foldpath
+    val_set_foldpath = opt.val_set_foldpath
     pre_Gmodel = opt.pre_Gmodel
     pre_Dmodel = opt.pre_Dmodel
-    
+
     # train_set = TrainDatasetFromFolder('data/DIV2K_train_HR', crop_size=CROP_SIZE, upscale_factor=UPSCALE_FACTOR)
     # val_set = ValDatasetFromFolder('data/DIV2K_valid_HR', upscale_factor=UPSCALE_FACTOR)
-	# train_loader = DataLoader(dataset=train_set, num_workers=4, batch_size=64, shuffle=True)
+    # train_loader = DataLoader(dataset=train_set, num_workers=4, batch_size=64, shuffle=True)
     # val_loader = DataLoader(dataset=val_set, num_workers=4, batch_size=1, shuffle=False)
     train_set = TrainDatasetFromFolder(train_set_foldpath, crop_size=CROP_SIZE, upscale_factor=UPSCALE_FACTOR)
     val_set = ValDatasetFromFolder(val_set_foldpath, upscale_factor=UPSCALE_FACTOR)
     train_loader = DataLoader(dataset=train_set, num_workers=4, batch_size=64, shuffle=True)
     val_loader = DataLoader(dataset=val_set, num_workers=4, batch_size=1, shuffle=False)
-    
+
     netG = Generator(UPSCALE_FACTOR)
     print('# generator parameters:', sum(param.numel() for param in netG.parameters()))
     netD = Discriminator()
     print('# discriminator parameters:', sum(param.numel() for param in netD.parameters()))
-    
+
     generator_criterion = GeneratorLoss()
-    
+
     if torch.cuda.is_available():
-	netG.cuda()
-	netG.load_state_dict(torch.load(pre_Gmodel))
-	netD.cuda()
-	netD.load_state_dict(torch.load(pre_Dmodel))
+        netG.cuda()
+        netG.load_state_dict(torch.load(pre_Gmodel))
+        netD.cuda()
+        netD.load_state_dict(torch.load(pre_Dmodel))
         generator_criterion.cuda()
-    
+
     optimizerG = optim.Adam(netG.parameters())
     optimizerD = optim.Adam(netD.parameters())
-    
+
     results = {'d_loss': [], 'g_loss': [], 'd_score': [], 'g_score': [], 'psnr': [], 'ssim': []}
-    
+
     for epoch in range(1, NUM_EPOCHS + 1):
         train_bar = tqdm(train_loader)
         running_results = {'batch_sizes': 0, 'd_loss': 0, 'g_loss': 0, 'd_score': 0, 'g_score': 0}
-    
+
         netG.train()
         netD.train()
         for data, target in train_bar:
             g_update_first = True
             batch_size = data.size(0)
             running_results['batch_sizes'] += batch_size
-    
+
             ############################
             # (1) Update D network: maximize D(x)-1-D(G(z))
             ###########################
@@ -85,44 +85,43 @@ if __name__ == '__main__':
             if torch.cuda.is_available():
                 z = z.cuda()
             fake_img = netG(z)
-    
+
             netD.zero_grad()
             real_out = netD(real_img).mean()
             fake_out = netD(fake_img).mean()
             d_loss = 1 - real_out + fake_out
             d_loss.backward(retain_graph=True)
             optimizerD.step()
-    
+
             ############################
             # (2) Update G network: minimize 1-D(G(z)) + Perception Loss + Image Loss + TV Loss
             ###########################
             netG.zero_grad()
             g_loss = generator_criterion(fake_out, fake_img, real_img)
             g_loss.backward()
-            
+
             fake_img = netG(z)
             fake_out = netD(fake_img).mean()
-            
-            
+
             optimizerG.step()
 
-            # loss for current batch before optimization 
+            # loss for current batch before optimization
             running_results['g_loss'] += g_loss.item() * batch_size
             running_results['d_loss'] += d_loss.item() * batch_size
             running_results['d_score'] += real_out.item() * batch_size
             running_results['g_score'] += fake_out.item() * batch_size
-    
+
             train_bar.set_description(desc='[%d/%d] Loss_D: %.4f Loss_G: %.4f D(x): %.4f D(G(z)): %.4f' % (
                 epoch, NUM_EPOCHS, running_results['d_loss'] / running_results['batch_sizes'],
                 running_results['g_loss'] / running_results['batch_sizes'],
                 running_results['d_score'] / running_results['batch_sizes'],
                 running_results['g_score'] / running_results['batch_sizes']))
-    
+
         netG.eval()
         out_path = 'training_results/SRF_' + str(UPSCALE_FACTOR) + '/'
         if not os.path.exists(out_path):
             os.makedirs(out_path)
-        
+
         with torch.no_grad():
             val_bar = tqdm(val_loader)
             valing_results = {'mse': 0, 'ssims': 0, 'psnr': 0, 'ssim': 0, 'batch_sizes': 0}
@@ -136,17 +135,18 @@ if __name__ == '__main__':
                     lr = lr.cuda()
                     hr = hr.cuda()
                 sr = netG(lr)
-        
+
                 batch_mse = ((sr - hr) ** 2).data.mean()
                 valing_results['mse'] += batch_mse * batch_size
                 batch_ssim = pytorch_ssim.ssim(sr, hr).item()
                 valing_results['ssims'] += batch_ssim * batch_size
-                valing_results['psnr'] = 10 * log10((hr.max()**2) / (valing_results['mse'] / valing_results['batch_sizes']))
+                valing_results['psnr'] = 10 * log10(
+                    (hr.max() ** 2) / (valing_results['mse'] / valing_results['batch_sizes']))
                 valing_results['ssim'] = valing_results['ssims'] / valing_results['batch_sizes']
                 val_bar.set_description(
                     desc='[converting LR images to SR images] PSNR: %.4f dB SSIM: %.4f' % (
                         valing_results['psnr'], valing_results['ssim']))
-        
+
                 val_images.extend(
                     [display_transform()(val_hr_restore.squeeze(0)), display_transform()(hr.data.cpu().squeeze(0)),
                      display_transform()(sr.data.cpu().squeeze(0))])
@@ -159,7 +159,7 @@ if __name__ == '__main__':
                     image = utils.make_grid(image, nrow=3, padding=5)
                     utils.save_image(image, out_path + 'epoch_%d_index_%d.png' % (epoch, index), padding=5)
                     index += 1
-    
+
         # save model parameters
         if epoch % 10 == 0 and epoch != 0:
             torch.save(netG.state_dict(), 'epochs/netG_epoch_%d_%d.pth' % (UPSCALE_FACTOR, epoch))
@@ -171,7 +171,7 @@ if __name__ == '__main__':
         results['g_score'].append(running_results['g_score'] / running_results['batch_sizes'])
         results['psnr'].append(valing_results['psnr'])
         results['ssim'].append(valing_results['ssim'])
-    
+
         if epoch % 10 == 0 and epoch != 0:
             out_path = 'statistics/'
             data_frame = pd.DataFrame(
