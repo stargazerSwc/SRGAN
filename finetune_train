@@ -20,7 +20,10 @@ parser.add_argument('--crop_size', default=88, type=int, help='training images c
 parser.add_argument('--upscale_factor', default=4, type=int, choices=[2, 4, 8],
                     help='super resolution upscale factor')
 parser.add_argument('--num_epochs', default=1, type=int, help='train epoch number')
-
+parser.add_argument('--train_set_foldpath', default='../input/SRGAN-test/VOC2012/VOC2012/train', help='trainsetfoldpath')
+parser.add_argument('--val_set_foldpath', default='../input/SRGAN-test/VOC2012/VOC2012/val', help='valsetfoldpath')
+parser.add_argument('--pre_Gmodel',default='../input/SRGAN-test/netG_epoch_4_70.pth', help='pretrained Generator')
+parser.add_argument('--pre_Dmodel',default='../input/SRGAN-test/netD_epoch_4_70.pth', help='pretrained Discriminator')
 
 if __name__ == '__main__':
     opt = parser.parse_args()
@@ -28,13 +31,17 @@ if __name__ == '__main__':
     CROP_SIZE = opt.crop_size
     UPSCALE_FACTOR = opt.upscale_factor
     NUM_EPOCHS = opt.num_epochs
+    train_set_foldpath = opt.traintrain_set_foldpath
+    val_set_foldpath=opt.val_set_foldpath
+    pre_Gmodel = opt.pre_Gmodel
+    pre_Dmodel = opt.pre_Dmodel
     
     # train_set = TrainDatasetFromFolder('data/DIV2K_train_HR', crop_size=CROP_SIZE, upscale_factor=UPSCALE_FACTOR)
     # val_set = ValDatasetFromFolder('data/DIV2K_valid_HR', upscale_factor=UPSCALE_FACTOR)
 	# train_loader = DataLoader(dataset=train_set, num_workers=4, batch_size=64, shuffle=True)
     # val_loader = DataLoader(dataset=val_set, num_workers=4, batch_size=1, shuffle=False)
-    train_set = TrainDatasetFromFolder('../input/sr-test/VOC2012/VOC2012/train', crop_size=CROP_SIZE, upscale_factor=UPSCALE_FACTOR)
-    val_set = ValDatasetFromFolder('../input/sr-test/VOC2012/VOC2012/val', upscale_factor=UPSCALE_FACTOR)
+    train_set = TrainDatasetFromFolder(train_set_foldpath, crop_size=CROP_SIZE, upscale_factor=UPSCALE_FACTOR)
+    val_set = ValDatasetFromFolder(val_set_foldpath, upscale_factor=UPSCALE_FACTOR)
     train_loader = DataLoader(dataset=train_set, num_workers=4, batch_size=64, shuffle=True)
     val_loader = DataLoader(dataset=val_set, num_workers=4, batch_size=1, shuffle=False)
     
@@ -47,7 +54,9 @@ if __name__ == '__main__':
     
     if torch.cuda.is_available():
         netG.cuda()
+	netG.load_state_dict(torch.load(pre_Gmodel))
         netD.cuda()
+	netD.load_state_dict(torch.load(pre_Dmodel))
         generator_criterion.cuda()
     
     optimizerG = optim.Adam(netG.parameters())
